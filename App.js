@@ -6,11 +6,11 @@
 
 import React, { Component } from 'react';
 import {
-    StyleSheet,
-    View,
-    Text,
-    Dimensions,
-    TouchableOpacity
+  StyleSheet,
+  Text,
+  View,
+  Dimensions,
+  TouchableOpacity
 } from 'react-native';
 
 import MapView, { MAP_TYPES } from 'react-native-maps';
@@ -34,32 +34,21 @@ export default class App extends Component<{}> {
                 latitudeDelta: LATITUDE_DELTA,
                 longitudeDelta: LONGITUDE_DELTA,
             },
+            marker: {
+                latitude: LATITUDE,
+                longitude: LONGITUDE,
+            }
         };
+
+        setInterval(() => {
+            this.getPositionFromApiAndMoveMap();
+        }, 1000);
     }
 
     onRegionChange(region) {
         this.setState({ region });
     }
 
-    jumpRandom() {
-        this.setState({ region: this.randomRegion() });
-    }
-
-    animateRandom() {
-        this.map.animateToRegion(this.randomRegion());
-    }
-
-    animateRandomCoordinate() {
-        this.map.animateToCoordinate(this.randomCoordinate());
-    }
-
-    animateToRandomBearing() {
-        this.map.animateToBearing(this.getRandomFloat(-360, 360));
-    }
-
-    animateToRandomViewingAngle() {
-        this.map.animateToViewingAngle(this.getRandomFloat(0, 90));
-    }
 
     getRandomFloat(min, max) {
         return (Math.random() * (max - min)) + min;
@@ -80,6 +69,33 @@ export default class App extends Component<{}> {
         };
     }
 
+     getPositionFromApiAndMoveMap() {
+        return fetch('http://aleksandrychev.name:3000')
+            .then((response) => response.json())
+            .then((responseJson) => {
+
+                this.map.animateToCoordinate({
+                    latitude: responseJson.Lat,
+                    longitude: responseJson.Long
+                });
+
+                this.setState({ region: {
+                    latitude: responseJson.Lat,
+                    longitude: responseJson.Long,
+                    latitudeDelta: LATITUDE_DELTA,
+                    longitudeDelta: LONGITUDE_DELTA,
+                },
+                    marker: {
+                        latitude: responseJson.Lat,
+                        longitude: responseJson.Long
+                    } });
+
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    }
+
     render() {
         return (
             <View style={styles.container}>
@@ -90,7 +106,18 @@ export default class App extends Component<{}> {
                   style={styles.map}
                   initialRegion={this.state.region}
                   onRegionChange={region => this.onRegionChange(region)}
-              />
+              >
+
+                  <MapView.Marker
+                      key="mazda3"
+                      coordinate={{
+                          latitude: this.state.marker.latitude,
+                          longitude: this.state.marker.longitude
+                      }}
+                  />
+              </MapView>
+
+
               <View style={[styles.bubble, styles.latlng]}>
                 <Text style={{ textAlign: 'center' }}>
                     {this.state.region.latitude.toPrecision(7)},
@@ -99,35 +126,12 @@ export default class App extends Component<{}> {
               </View>
               <View style={styles.buttonContainer}>
                 <TouchableOpacity
-                    onPress={() => this.jumpRandom()}
+                    onPress={() => this.getPositionFromApiAndMoveMap()}
                     style={[styles.bubble, styles.button]}
                 >
-                  <Text style={styles.buttonText}>Jump</Text>
+                  <Text style={styles.buttonText}>get position</Text>
                 </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => this.animateRandom()}
-                    style={[styles.bubble, styles.button]}
-                >
-                  <Text style={styles.buttonText}>Animate (Region)</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => this.animateRandomCoordinate()}
-                    style={[styles.bubble, styles.button]}
-                >
-                  <Text style={styles.buttonText}>Animate (Coordinate)</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => this.animateToRandomBearing()}
-                    style={[styles.bubble, styles.button]}
-                >
-                  <Text style={styles.buttonText}>Animate (Bearing)</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    onPress={() => this.animateToRandomViewingAngle()}
-                    style={[styles.bubble, styles.button]}
-                >
-                  <Text style={styles.buttonText}>Animate (View Angle)</Text>
-                </TouchableOpacity>
+
               </View>
             </View>
         );
